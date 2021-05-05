@@ -3,40 +3,21 @@
 ##validatePlp <- readRDS(file.path("data","extValidation.rds"))
 source("processing.R")
 
-# con <- DBI::dbConnect(odbc::odbc(),
-#                       Driver   = "postgres",
-#                       Server   = Sys.getenv("shinydbServer"),
-#                       Database = Sys.getenv("shinydbDatabase"),
-#                       UID      = Sys.getenv("covid19vaccinationplpdbUser"),
-#                       PWD = Sys.getenv("covid19vaccinationplpdbPw"),
-#                       Port     = Sys.getenv("shinydbPort")
-# )
+connectionPool <- pool::dbPool(drv = DatabaseConnector::DatabaseConnectorDriver(),
+                               dbms = "postgresql",
+                               server = paste(Sys.getenv("shinydbServer"),
+                                              Sys.getenv("shinydbDatabase"),
+                                              sep = "/"),
+                               port = Sys.getenv("shinydbPort"),
+                               user = Sys.getenv("covid19vaccinationplpdbUser"),
+                               password = Sys.getenv("covid19vaccinationplpdbPw"))
 
-connectionDetails <- createConnectionDetails(dbms = "postgresql",
-                                             server = paste(Sys.getenv("shinydbServer"),
-                                                            Sys.getenv("shinydbDatabase"),
-                                                            Sys.getenv("covid19vaccinationplpdbSchema"),
-                                                            sep = "/"),
-                                             port = Sys.getenv("shinydbPort"),
-                                             user = Sys.getenv("covid19vaccinationplpdbUser"),
-                                             password = Sys.getenv("covid19vaccinationplpdbPw"))
-
-con <- connect(connectionDetails)
-
-if(is.null(.GlobalEnv$shinySettings$result)){
-  result <- 'data'
-  print('Extracting results from data folder')
-} else{
-  result <- .GlobalEnv$shinySettings$result
-  print('Extracting results from .GlobalEnv$shinySettings')
-}
-
-if(is.null(.GlobalEnv$shinySettings$validation)){
-  validation <- NULL
-} else{
-  validation <- .GlobalEnv$shinySettings$validation
-}
-
+onStop(function() {
+  if (DBI::dbIsValid(connectionPool)) {
+    writeLines("Closing connection pool")
+    pool::poolClose(connectionPool)
+  }
+})
 
 summaryTable <- DBI::dbGetQuery(conn = con, 
                                 "SELECT results.result_id, results.model_id, researcher_id, result_type, database_acronym AS Dev, target_name AS T, outcome_name AS O,
