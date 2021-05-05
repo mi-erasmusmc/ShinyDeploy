@@ -3,24 +3,25 @@
 ##validatePlp <- readRDS(file.path("data","extValidation.rds"))
 source("processing.R")
 
-con <- DBI::dbConnect(odbc::odbc(),
-                      Driver   = "SQL Server",
-                      Server   = Sys.getenv("shinydbServer"),
-                      Database = Sys.getenv("shinydbDatabase"),
-                      UID      = Sys.getenv("covid19vaccinationplpdbUser"),
-                      PWD = Sys.getenv("covid19vaccinationplpdbPw"),
-                      Port     = Sys.getenv("shinydbPort")
-)
-
-# connectionDetails <- DatabaseConnector::createConnectionDetails(
-#   dbms = Sys.getenv("shinydbServer"), 
-#   user = Sys.getenv("covid19vaccinationplpdbUser"), 
-#   password = Sys.getenv("covid19vaccinationplpdbPw"),
-#   server = Sys.getenv("shinydbServer"),
-#   port = Sys.getenv("shinydbPort")
+# con <- DBI::dbConnect(odbc::odbc(),
+#                       Driver   = "postgres",
+#                       Server   = Sys.getenv("shinydbServer"),
+#                       Database = Sys.getenv("shinydbDatabase"),
+#                       UID      = Sys.getenv("covid19vaccinationplpdbUser"),
+#                       PWD = Sys.getenv("covid19vaccinationplpdbPw"),
+#                       Port     = Sys.getenv("shinydbPort")
 # )
-# con <- DatabaseConnector::connect(connectionDetails)
 
+connectionDetails <- createConnectionDetails(dbms = "postgresql",
+                                             server = paste(Sys.getenv("shinydbServer"),
+                                                            Sys.getenv("shinydbDatabase"),
+                                                            Sys.getenv("covid19vaccinationplpdbSchema"),
+                                                            sep = "/"),
+                                             port = Sys.getenv("shinydbPort"),
+                                             user = Sys.getenv("covid19vaccinationplpdbUser"),
+                                             password = Sys.getenv("covid19vaccinationplpdbPw"))
+
+con <- connect(connectionDetails)
 
 if(is.null(.GlobalEnv$shinySettings$result)){
   result <- 'data'
